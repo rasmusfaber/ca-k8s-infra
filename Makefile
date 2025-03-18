@@ -11,16 +11,13 @@ make refresh:
 
 deploy:
 	@echo "Deploying resources..."
-	@helm upgrade --install training-infra ./training-infra --set environment=${ENVIRONMENT}
+	@helm upgrade --install training-infra  ./training-infra --set environment=${ENVIRONMENT}
+	@echo "Waiting for jobs to start..."
+	@kubectl get jobs -o name | xargs -I {} bash -c 'kubectl wait --for=jsonpath="{.status.ready}=1" {} --timeout=30s || true'
 	@echo "Waiting for jobs to complete..."
-	@kubectl get jobs -o name | xargs -I {} bash -c 'kubectl wait --for=condition=complete {} --timeout=300s || kubectl wait --for=condition=failed {} --timeout=300s'
+	@kubectl get jobs -o name | xargs -I {} bash -c 'kubectl logs -f {} || true'
 
-
-wait_for_ray:
-	@echo "Waiting for Ray cluster head node to be ready..."
-	@POD_NAME=$$(kubectl get endpoints raycluster-${ENVIRONMENT}-head-svc -o jsonpath='{.subsets[0].addresses[0].targetRef.name}') && kubectl wait --for=condition=ready pod/$$POD_NAME --timeout=60s
-
-start_port_forward: wait_for_ray
+start_port_forward:
 	@echo "Starting port forwarding..."
 	@kubectl port-forward service/raycluster-${ENVIRONMENT}-head-svc 8265:8265 10001:10001 & echo $$! >> .port_forward.pid
 
@@ -32,7 +29,10 @@ stop_port_forward:
 		echo "No port forwarding process found"; \
 	fi
 
-train: start_port_forward
+install:
+	uv sync
+
+train: install start_port_forward
 	@trap 'make stop_port_forward' EXIT 2 15; \
 	echo "Training model..." && \
 	RAY_AIR_NEW_OUTPUT=0 uv run --active python training/train.py
