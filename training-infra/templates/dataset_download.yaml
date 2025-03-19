@@ -14,7 +14,7 @@ spec:
         - -c
         - |
           # Configure MinIO client
-          mc alias set myminio http://minio.minio-internal-{{ .Values.environment }}.svc.cluster.local:9000 $MINIO_ACCESS_KEY $MINIO_SECRET_KEY
+          mc alias set myminio http://minio.minio-external-{{ .Values.environment }}.svc.cluster.local:9000 $MINIO_ACCESS_KEY $MINIO_SECRET_KEY
 
           # Create bucket if it doesn't exist
           mc mb myminio/datasets --ignore-existing
