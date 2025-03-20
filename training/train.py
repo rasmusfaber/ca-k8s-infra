@@ -215,7 +215,7 @@ def train_func(config):
             copy_dir_to_s3(fs, local_model_dir, checkpoint_path)
 
             # Make model available to Prometheus:
-            fs_prom = fs._reconstruct({'endpoint_override':f"minio.minio-internal-{os.environ['ENVIRONMENT']}.svc.cluster.local:9000"})
+            fs_prom = fs._reconstruct({'endpoint_override':f"minio.minio-external-{os.environ['ENVIRONMENT']}.svc.cluster.local:9000"})
             copy_dir_to_s3(fs_prom, local_model_dir, checkpoint_path)
 
     return {"final_loss": epoch_loss / len(train_loader)}
