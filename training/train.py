@@ -75,11 +75,9 @@ def train_func(config):
     rank = ray.train.get_context().get_world_rank()
 
     # Initialize the S3 filesystem
-    val1 = "minioadmin"
-    val2 = "minioadmin"
     fs = S3FileSystem(
-        access_key=val1,
-        secret_key=val2,
+        access_key="minioadmin",
+        secret_key="minioadmin",
         endpoint_override=f"minio.minio-internal-{os.environ['ENVIRONMENT']}.svc.cluster.local:9000",
         scheme="http",
     )
@@ -217,12 +215,7 @@ def train_func(config):
             copy_dir_to_s3(fs, local_model_dir, checkpoint_path)
 
             # Make model available to Prometheus:
-            fs_prom = S3FileSystem(
-                access_key=val1,
-                secret_key=val2,
-                endpoint_override=f"minio.minio-external-{os.environ['ENVIRONMENT']}.svc.cluster.local:9000",
-                scheme="http",
-            )
+            fs_prom = fs._reconstruct({'endpoint_override':f"minio.minio-internal-{os.environ['ENVIRONMENT']}.svc.cluster.local:9000"})
             copy_dir_to_s3(fs_prom, local_model_dir, checkpoint_path)
 
     return {"final_loss": epoch_loss / len(train_loader)}
