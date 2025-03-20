@@ -216,8 +216,8 @@ def train_func(config):
 
             # Make model available to Prometheus:
             fs_prom = S3FileSystem(
-                access_key="minioadmin",
-                secret_key="minioadmin",  # noqa
+                access_key=fs.access_key,
+                secret_key=fs.secret_key,
                 endpoint_override=f"minio.minio-external-{os.environ['ENVIRONMENT']}.svc.cluster.local:9000",
                 scheme="http",
             )
