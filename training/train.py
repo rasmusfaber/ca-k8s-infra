@@ -75,9 +75,11 @@ def train_func(config):
     rank = ray.train.get_context().get_world_rank()
 
     # Initialize the S3 filesystem
-    fs = S3FileSystem(
-        access_key="minioadmin",
-        secret_key="minioadmin",  # noqa
+    # Move the hardcoded keys to variables, so we can move them to Bitnami Sealed Secrets.
+    access_key = secret_key = "minioadmin"
+    fs = S3FileSystem (
+        access_key=access_key,
+        secret_key=secret_key,
         endpoint_override=f"minio.minio-internal-{os.environ['ENVIRONMENT']}.svc.cluster.local:9000",
         scheme="http",
     )
@@ -214,13 +216,21 @@ def train_func(config):
             checkpoint_path = f"models/checkpoints/sentiment_model/{ray.train.get_context().get_trial_id()}"
             copy_dir_to_s3(fs, local_model_dir, checkpoint_path)
 
+            # Make model available to Prometheus:
+            fs_prom = S3FileSystem(
+                access_key=access_key,
+                secret_key=secret_key,
+                endpoint_override=f"minio.minio-external-{os.environ['ENVIRONMENT']}.svc.cluster.local:9000",
+                scheme="http",
+            )
+            copy_dir_to_s3(fs_prom, local_model_dir, checkpoint_path)
+
     return {"final_loss": epoch_loss / len(train_loader)}
 
 
 if __name__ == "__main__":
     # Run `make ray_port_forward` ahead of this to make the ray cluster accessible
     ray.init(address="ray://localhost:10001", runtime_env=runtime_env)
-
     with TemporaryDirectory() as results_dir:
         # Create the trainer
         trainer = TorchTrainer(
