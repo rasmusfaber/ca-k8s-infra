@@ -75,7 +75,7 @@ def train_func(config):
     rank = ray.train.get_context().get_world_rank()
 
     # Initialize the S3 filesystem
-    # Prepare for moving temporary keys to Bitnami Sealed Secrets. Keep the hardcoded keys for now. At least it is not making it worse.
+    # Move the hardcoded keys to variables, so we can move them to Bitnami Sealed Secrets.
     access_key = secret_key = "minioadmin"
     fs = S3FileSystem (
         access_key=access_key,
